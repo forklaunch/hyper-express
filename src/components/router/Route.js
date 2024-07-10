@@ -162,11 +162,13 @@ class Route {
             })
         );
 
+        const offset = middlewares.reduce((max, middleware) => middleware.id > max ? middleware.id : max, 0);
+        
         // Push the route-specific middlewares to the array at the end
         if (Array.isArray(this.options.middlewares))
             this.options.middlewares.forEach((middleware) =>
                 middlewares.push({
-                    id: this.id,
+                    id: this.id + offset,
                     pattern,
                     handler: middleware,
                     match: false, // Route-specific middlewares do not need to be matched
