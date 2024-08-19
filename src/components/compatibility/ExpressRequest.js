@@ -89,6 +89,10 @@ class ExpressRequest {
         return this.path_parameters;
     }
 
+    set params(value) {
+        this.path_parameters = value;
+    }
+
     get hostname() {
         // Retrieve the host header and determine if we can trust intermediary proxy servers
         let host = this.get('X-Forwarded-Host');
@@ -143,6 +147,10 @@ class ExpressRequest {
 
     get query() {
         return this.query_parameters;
+    }
+
+    set query(value) {
+        this.query_parameters = value;
     }
 
     get secure() {
