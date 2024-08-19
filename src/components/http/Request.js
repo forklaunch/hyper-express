@@ -868,6 +868,13 @@ class Request {
     }
 
     /**
+     * Sets path parameters for incoming request.
+     */
+    set path_parameters(value) {
+        this._path_parameters = value;
+    }
+
+    /**
      * Returns query parameters from incoming request.
      * @returns {Object.<string, string>}
      */
@@ -878,6 +885,13 @@ class Request {
         // Parse query using querystring and cache results
         this._query_parameters = querystring.parse(this._query);
         return this._query_parameters;
+    }
+
+    /**
+     * Sets query parameters for incoming request.
+     */
+    set query_parameters(value) {
+        this._query_parameters = value;
     }
 
     /**
