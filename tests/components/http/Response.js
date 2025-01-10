@@ -11,6 +11,7 @@ const { test_response_events } = require('./scenarios/response_hooks.js');
 const { test_response_sync_writes } = require('./scenarios/response_stream_sync_writes.js');
 const { test_response_custom_content_length } = require('./scenarios/response_custom_content_length.js');
 const { test_response_sse } = require('./scenarios/response_sse.js');
+const { test_response_set_header } = require('./scenarios/response_set_header.js');
 const router = new HyperExpress.Router();
 const endpoint = '/tests/response/operators';
 const endpoint_url = server.base + endpoint;
@@ -58,6 +59,7 @@ router.post(endpoint, async (request, response) => {
 
 // Bind router to webserver
 const { TEST_SERVER } = require('../Server.js');
+const { test_response_send_status } = require('./scenarios/response_send_status.js');
 TEST_SERVER.use(router);
 
 async function test_response_object() {
@@ -137,6 +139,9 @@ async function test_response_object() {
     // Verify the custom HTTP status code and message support
     await test_response_custom_status();
 
+    // Verify the custom HTTP status code and message support
+    await test_response_send_status();
+
     // Verify the behavior of the .header() and .cookie() methods
     await test_response_headers_behavior();
 
@@ -169,6 +174,9 @@ async function test_response_object() {
 
     // Test Response.LiveFile object
     await test_livefile_object();
+
+    // Test Response.set() header
+    await test_response_set_header();
 
     // Verify .on() aka. Response events
     assert_log(

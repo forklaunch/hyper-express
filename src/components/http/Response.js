@@ -618,7 +618,10 @@ class Response {
                     // Note! This callback may be called as many times as neccessary to send a full chunk when using the tryEnd method
                     this.drain((offset) => {
                         // Check if the response has been completed / connection has been closed since we can no longer write to the client
-                        if (this.completed) {
+                        // When total_size is not provided, the chunk has been fully sent already via uWS.write()
+                        // Only when total_size is provided we need to retry to send the ramining chunk since we have used uWS.tryEnd() and
+                        // that does not guarantee that the whole chunk has been sent when stream is drained
+                        if (this.completed || !total_size) {
                             resolve();
                             return true;
                         }
@@ -742,7 +745,7 @@ class Response {
      * @returns {Boolean} Boolean
      */
     json(body) {
-        return this.type('json').send(JSON.stringify(body));
+        return this.header('content-type', 'application/json', true).send(JSON.stringify(body));
     }
 
     /**
@@ -757,7 +760,7 @@ class Response {
     jsonp(body, name) {
         let query_parameters = this._wrapped_request.query_parameters;
         let method_name = query_parameters['callback'] || name;
-        return this.type('js').send(`${method_name}(${JSON.stringify(body)})`);
+        return this.header('content-type', 'application/javascript', true).send(`${method_name}(${JSON.stringify(body)})`);
     }
 
     /**
@@ -768,7 +771,7 @@ class Response {
      * @returns {Boolean} Boolean
      */
     html(body) {
-        return this.type('html').send(body);
+        return this.header('content-type', 'text/html', true).send(body);
     }
 
     /**
@@ -847,6 +850,7 @@ class Response {
         return this.attachment(path, filename).file(path);
     }
 
+    #thrown = false;
     /**
      * This method allows you to throw an error which will be caught by the global error handler.
      *
@@ -854,6 +858,10 @@ class Response {
      * @returns {Response}
      */
     throw(error) {
+        // If we have already thrown an error, ignore further throws
+        if (this.#thrown) return this;
+        this.#thrown = true;
+
         // If the error is not an instance of Error, wrap it in an Error object that
         if (!(error instanceof Error)) error = new Error(`ERR_CAUGHT_NON_ERROR_TYPE: ${error}`);
 

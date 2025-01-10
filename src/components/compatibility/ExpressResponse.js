@@ -84,7 +84,7 @@ class ExpressResponse {
     }
 
     sendStatus(status_code) {
-        return this.status(status_code);
+        return this.status(status_code).send();
     }
 
     set(field, value) {
@@ -92,7 +92,7 @@ class ExpressResponse {
             const reference = this;
             Object.keys(field).forEach((name) => {
                 let value = field[name];
-                reference.header(field, value);
+                reference.header(name, value);
             });
         } else {
             this.header(field, value);

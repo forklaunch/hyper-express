@@ -103,29 +103,51 @@ class Route {
             };
         }
 
-        // Wrap the middleware/route handler trigger execution in a try/catch to catch and pipe synchronous errors
-        try {
-            // Retrieve an output value from the route handler or the middleware function
-            let output;
-            if (middleware) {
-                // Execute the middleware handler with the iterator
-                output = middleware.handler(request, response, iterator);
-            } else {
-                // Excute the route handler without the iterator
-                output = this.handler(request, response);
-            }
+        // Determine if this is an async handler which can explicitly throw uncaught errors
+        const is_async_handler = (middleware ? middleware.handler : this.handler).constructor.name === 'AsyncFunction';
+        if (is_async_handler) {
+            // Execute the middleware or route handler within a promise to catch and pipe synchronous errors
+            new Promise(async (resolve) => {
+                try {
+                    if (middleware) {
+                        // Execute the middleware or route handler with the iterator
+                        await middleware.handler(request, response, iterator);
 
-            // Determine if the a Promise was returned which must be safely handled and iterated from
-            if (typeof output?.then === 'function') {
-                // Bind a then callback if this was a middleware trigger to proceed to the next middleware or route handler after this middleware resolves
-                if (middleware) output.then(iterator);
+                        // Call the iterator anyways in case the middleware never calls the next() iterator
+                        iterator();
+                    } else {
+                        await this.handler(request, response);
+                    }
+                } catch (error) {
+                    // Catch and pipe any errors to the error handler
+                    response.throw(error);
+                }
 
-                // Catch and pipe any errors to the global error handler
-                output.catch((error) => response.throw(error));
+                // Resolve promise to ensure it is properly cleaned up from memory
+                resolve();
+            });
+        } else {
+            // Execute the middleware or route handler within a protected try/catch to catch and pipe synchronous errors
+            try {
+                let output;
+                if (middleware) {
+                    output = middleware.handler(request, response, iterator);
+                } else {
+                    output = this.handler(request, response);
+                }
+
+                // Determine if a Promise instance was returned by the handler
+                if (typeof output?.then === 'function') {
+                    // If this is a middleware, we must try to call iterator after returned promise resolves
+                    if (middleware) output.then(iterator);
+
+                    // Catch and pipe any errors to the global error handler
+                    output.catch((error) => response.throw(error));
+                }
+            } catch (error) {
+                // Catch and pipe any errors to the error handler
+                response.throw(error);
             }
-        } catch (error) {
-            // Catch and pipe any errors to the error handler
-            response.throw(error);
         }
     }
 
@@ -162,8 +184,9 @@ class Route {
             })
         );
 
-        const offset = middlewares.reduce((max, middleware) => middleware.id > max ? middleware.id : max, 0);
-        
+        // Find the largest ID from the current middlewares
+        const offset = middlewares.reduce((max, middleware) => (middleware.id > max ? middleware.id : max), 0);
+
         // Push the route-specific middlewares to the array at the end
         if (Array.isArray(this.options.middlewares))
             this.options.middlewares.forEach((middleware) =>
