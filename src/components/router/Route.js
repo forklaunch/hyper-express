@@ -66,9 +66,10 @@ class Route {
      * @param {import('../http/Response.js')} response The HyperExpress response object.
      * @param {Number=} cursor The middleware cursor.
      */
-    handle(request, response, cursor = 0) {
+    handle(request, response, cursor = 0, seen_cursors = new Set([])) {
         // Do not handle the request if the response has been sent aka. the request is no longer active
-        if (response.completed) return;
+        if (response.completed || seen_cursors.has(cursor)) return;
+        seen_cursors.add(cursor);
 
         // Retrieve the middleware for the current cursor, track the cursor if there is a valid middleware
         let iterator;
@@ -82,11 +83,11 @@ class Route {
                     const trailing = request.path[middleware.pattern.length];
                     if (trailing !== '/' && trailing !== undefined) {
                         // This handles cases where "/docs" middleware will incorrectly match "/docs-JSON" for example
-                        return this.handle(request, response, cursor + 1);
+                        return this.handle(request, response, cursor + 1, seen_cursors);
                     }
                 } else {
                     // Since the middleware pattern does not match the start of the request path, skip this middleware
-                    return this.handle(request, response, cursor + 1);
+                    return this.handle(request, response, cursor + 1, seen_cursors);
                 }
             }
 
@@ -99,7 +100,7 @@ class Route {
                 if (error instanceof Error) return response.throw(error);
 
                 // Handle this request again with an incremented cursor to execute the next middleware or route handler
-                this.handle(request, response, cursor + 1);
+                this.handle(request, response, cursor + 1, seen_cursors);
             };
         }
 
