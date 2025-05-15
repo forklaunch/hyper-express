@@ -250,7 +250,7 @@ export class Response<Locals = DefaultResponseLocals> extends Writable {
      *
      * @returns {SSEventStream=}
      */
-    get sse(): SSEventStream | undefined
+    get sse(): SSEventStream | undefined;
 
     /* ExpressJS Methods */
     append(name: string, values: string | Array<string>): Response;
@@ -260,7 +260,7 @@ export class Response<Locals = DefaultResponseLocals> extends Writable {
     setHeaders(headers: Object): void;
     writeHeaderValues(name: string, values: Array<string>): void;
     getHeader(name: string): string | Array<string> | void;
-    getHeaders(): { [key: string]: Array<string> };
+    getHeaders(): { [key: string]: string | Array<string> };
     removeHeader(name: string): void;
     setCookie(name: string, value: string, options?: CookieOptions): Response;
     hasCookie(name: string): Boolean;
