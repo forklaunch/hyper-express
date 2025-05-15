@@ -4,15 +4,12 @@ import { BusboyConfig } from 'busboy';
 import { HttpRequest } from 'uWebSockets.js';
 import { Options, Ranges, Result } from 'range-parser';
 import { MultipartHandler } from '../plugins/MultipartField';
+import { ParsedQs } from 'qs';
 
 type default_value = any;
 
 interface ParamsDictionary {
     [key: string]: string;
-}
-
-interface ParsedQs {
-    [key: string]: undefined | string | string[] | ParsedQs | ParsedQs[];
 }
 
 type DefaultRequestLocals = {
