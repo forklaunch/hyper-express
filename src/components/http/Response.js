@@ -172,7 +172,7 @@ class Response {
         if (mime_type[0] === '.') mime_type = mime_type.substring(1);
 
         // Determine proper mime type and send response
-        this.header('content-type', mime_types.contentType(mime_type) || 'text/plain');
+        this.header('content-type', mime_types.contentType(mime_type) || 'text/plain', true);
         return this;
     }
 
@@ -745,7 +745,10 @@ class Response {
      * @returns {Boolean} Boolean
      */
     json(body) {
-        return this.header('content-type', 'application/json', false).send(JSON.stringify(body));
+        if (this._headers['content-type'] === undefined) {
+            this.header('content-type', 'application/json', true);
+        }
+        return this.send(JSON.stringify(body));
     }
 
     /**
@@ -760,9 +763,10 @@ class Response {
     jsonp(body, name) {
         let query_parameters = this._wrapped_request.query_parameters;
         let method_name = query_parameters['callback'] || name;
-        return this.header('content-type', 'application/javascript', true).send(
-            `${method_name}(${JSON.stringify(body)})`
-        );
+        if (this._headers['content-type'] === undefined) {
+            this.header('content-type', 'application/javascript', true);
+        }
+        return this.send(`${method_name}(${JSON.stringify(body)})`);
     }
 
     /**
@@ -773,7 +777,10 @@ class Response {
      * @returns {Boolean} Boolean
      */
     html(body) {
-        return this.header('content-type', 'text/html', true).send(body);
+        if (this._headers['content-type'] === undefined) {
+            this.header('content-type', 'text/html', true);
+        }
+        return this.send(body);
     }
 
     /**
@@ -831,14 +838,14 @@ class Response {
      */
     attachment(path, name) {
         // Attach a blank content-disposition header when no filename is defined
-        if (path == undefined) return this.header('Content-Disposition', 'attachment');
+        if (path == undefined) return this.header('Content-Disposition', 'attachment', true);
 
         // Parses path in to file name and extension to write appropriate attachment headers
         let chunks = path.split('/');
         let final_name = name || chunks[chunks.length - 1];
         let name_chunks = final_name.split('.');
         let extension = name_chunks[name_chunks.length - 1];
-        return this.header('content-disposition', `attachment; filename="${final_name}"`).type(extension);
+        return this.header('content-disposition', `attachment; filename="${final_name}"`, true).type(extension);
     }
 
     /**
