@@ -126,6 +126,11 @@ export class Request<Locals = DefaultRequestLocals> extends Readable {
     get url(): string;
 
     /**
+     * Sets full request url for incoming request (path + query).
+     */
+    set url(value: string);
+
+    /**
      * Returns path for incoming request.
      * @returns {String}
      */
@@ -160,6 +165,11 @@ export class Request<Locals = DefaultRequestLocals> extends Readable {
      * @returns {Object.<string, string>}
      */
     get query_parameters(): { [key: string]: string };
+
+    /**
+     * Sets query parameters for incoming request.
+     */
+    set query_parameters(value: { [key: string]: string });
 
     /**
      * Returns remote IP address in string format from incoming request.

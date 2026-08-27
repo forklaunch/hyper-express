@@ -11,7 +11,43 @@ class ExpressResponse {
     }
 
     writeHeaders(headers) {
-        Object.keys(headers).forEach((name) => this.header(name, headers[name]));
+        // Node.js also accepts an Array of raw header name/value pairs
+        if (Array.isArray(headers)) {
+            if (headers.length % 2 !== 0)
+                throw new Error('HyperExpress.Response.writeHeaders(): Raw header arrays must contain name/value pairs.');
+
+            for (let index = 0; index < headers.length; index += 2) {
+                const header_key = headers[index];
+                const header_value = headers[index + 1];
+                this.header(header_key, header_value);
+            }
+        } else {
+            const header_keys = Object.keys(headers);
+            for (let index = 0; index < header_keys.length; index++) {
+                const header_key = header_keys[index];
+                const header_value = headers[header_key];
+                this.header(header_key, header_value);
+            }
+        }
+    }
+
+    /**
+     * Provides compatibility with Node.js ServerResponse.writeHead().
+     * @param {Number} status_code
+     * @param {String|Object|Array<String>=} status_message
+     * @param {Object|Array<String>=} headers
+     * @returns {Response} Response (Chainable)
+     */
+    writeHead(status_code, status_message, headers) {
+        // Support the writeHead(statusCode, headers) overload
+        if (status_message && typeof status_message === 'object') {
+            headers = status_message;
+            status_message = undefined;
+        }
+
+        this.status(status_code, status_message);
+        if (headers) this.writeHeaders(headers);
+        return this;
     }
 
     setHeaders(headers) {
@@ -19,7 +55,10 @@ class ExpressResponse {
     }
 
     writeHeaderValues(name, values) {
-        values.forEach((value) => this.header(name, value));
+        const header_values = values;
+        for (const header_value of header_values) {
+            this.header(name, header_value);
+        }
     }
 
     getHeader(name) {
@@ -60,14 +99,15 @@ class ExpressResponse {
     }
 
     links(links) {
-        // Build chunks of links and combine into header spec
+        // Serialize each relation using the HTTP Link header format
         let chunks = [];
-        Object.keys(links).forEach((rel) => {
-            let url = links[rel];
-            chunks.push(`<${url}>; rel="${rel}"`);
-        });
+        const relation_keys = Object.keys(links);
+        for (let index = 0; index < relation_keys.length; index++) {
+            const relation_key = relation_keys[index];
+            const relation_url = links[relation_key];
+            chunks.push(`<${relation_url}>; rel="${relation_key}"`);
+        }
 
-        // Write the link header
         this.header('link', chunks.join(', '));
     }
 
@@ -89,11 +129,12 @@ class ExpressResponse {
 
     set(field, value) {
         if (typeof field == 'object') {
-            const reference = this;
-            Object.keys(field).forEach((name) => {
-                let value = field[name];
-                reference.header(name, value);
-            });
+            const header_keys = Object.keys(field);
+            for (let index = 0; index < header_keys.length; index++) {
+                const header_key = header_keys[index];
+                const header_value = field[header_key];
+                this.header(header_key, header_value);
+            }
         } else {
             this.header(field, value);
         }
